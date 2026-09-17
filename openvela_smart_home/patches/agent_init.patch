@@ -1,0 +1,81 @@
+diff --git a/packages_ai_agent/src/agent_main.c b/packages_ai_agent/src/agent_main.c
+--- a/packages_ai_agent/src/agent_main.c	(原始版本)
++++ b/packages_ai_agent/src/agent_main.c	(修改后 - 注入智能家居Tool)
+@@ -1,10 +1,16 @@
+-/* 原始 Agent 入口 */
++/*
++ * agent_main.c - openvela 智能家居 Agent 主入口
++ * 已注入：灯光控制 + 温湿度读取 Tool
++ * 修改日期：2026-07-05
++ */
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-/* 原始头文件 */
++/* 原始框架头文件 */
+ /* #include "agent/agent_core.h" */
+ 
++/* +++ 新增：智能家居Tool头文件 +++ */
++#include "smart_home_tools.h"
+ 
+ /* 原始全局变量 */
+ static int g_agent_started = 0;
+@@ -15,8 +21,20 @@
+  */
+ int agent_start(void) {
+     printf("========================================\n");
+-    printf(" openvela AI Agent Starting...\n");
++    printf(" openvela 智能家居 Agent 启动中...\n");
+     printf("========================================\n");
++
++    /* +++ 新增：初始化智能家居硬件模块 +++ */
++    printf("[AgentInit] 初始化智能家居硬件模块...\n");
++    if (smart_home_tools_init() != 0) {
++        fprintf(stderr, "[AgentInit] 错误: 智能家居模块初始化失败\n");
++        return -1;
++    }
++    printf("[AgentInit] 智能家居模块初始化成功 ✓\n");
+ 
+     /* 原始初始化逻辑 */
+     printf("[Agent] Core engine starting...\n");
+@@ -25,13 +43,23 @@
+ 
+     g_agent_started = 1;
+     printf("========================================\n");
+-    printf(" Agent started. Waiting for commands...\n");
++    printf(" openvela 智能家居 Agent 启动完成！\n");
++    printf(" 已注册Tool: light_control, read_temperature\n");
++    printf(" 等待自然语言指令...\n");
+     printf("========================================\n");
+     return 0;
+ }
+ 
+ /*
++ * +++ 新增：注册智能家居Tool（外部函数声明） +++
++ */
++extern int register_smart_home_tools(void *agent_handle);
++
++/*
+  * 原始 Agent 初始化
+  */
+-int agent_init(void) {
++int agent_init(void) {
+     printf("[Agent] Initializing...\n");
+     
+     /* 原始初始化代码 */
+@@ -40,6 +68,15 @@
+      * agent_register_tool(agent, &default_tool);
+      */
+ 
++    /* +++ 新增：注册智能家居自定义Tool +++ */
++    printf("[AgentInit] 注册智能家居自定义Tool...\n");
++    void *agent_handle = NULL;  /* 替换为 agent_create() 返回值 */
++    if (register_smart_home_tools(agent_handle) != 0) {
++        fprintf(stderr, "[AgentInit] 错误: 智能家居Tool注册失败\n");
++        return -1;
++    }
++    printf("[AgentInit] 智能家居Tool注册完成 ✓\n");
++
+     printf("[Agent] Initialization complete.\n");
+     return 0;
+ }

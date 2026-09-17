@@ -1,0 +1,11 @@
+openvela Smart Home Control System
+Copyright 2026 openvela Smart Home Contributors
+
+This product includes software developed by the openvela Project
+(https://github.com/YashTech/vela_agent).
+
+openvela is an open-source project based on Xiaomi Vela and NuttX,
+licensed under the Apache License, Version 2.0.
+
+The original openvela source code is available at:
+https://github.com/YashTech/vela_agent

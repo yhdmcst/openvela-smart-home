@@ -1,0 +1,65 @@
+diff --git a/packages_ai_agent/src/tool_manager.c b/packages_ai_agent/src/tool_manager.c
+--- a/packages_ai_agent/src/tool_manager.c	(原始版本)
++++ b/packages_ai_agent/src/tool_manager.c	(修改后 - 注册智能家居Tool)
+@@ -1,8 +1,9 @@
+ /*
+  * tool_manager.c - Tool 管理器
+  * 负责注册、查找、调用所有 Tool
++ * 已注入智能家居Tool注册逻辑
+  */
+ 
+ /* 原始头文件 */
+ #include "tool_manager.h"
+ 
+@@ -30,6 +31,37 @@
+         ttools_register_default_tool(tm);
+     }
+ 
++    /* +++ 新增：注册智能家居Tool +++ */
++    {
++        /* 灯光控制Tool */
++        tool_def_t light_tool = {
++            .name = "light_control",
++            .description = "打开/关闭/调节灯光亮度。"
++                           "参数: location(客厅/卧室/厨房/浴室/书房), "
++                           "action(开灯/关灯/调亮度/切换), "
++                           "brightness(0-100, 调亮度时必填)",
++            .func = tool_light_control_entry,
++            .arg_count = 3,
++            .category = TOOL_CATEGORY_SMART_HOME
++        };
++        tool_manager_register(tm, &light_tool);
++        printf("[ToolMgr] 注册Tool: light_control ✓\n");
++
++        /* 温湿度读取Tool */
++        tool_def_t temp_tool = {
++            .name = "read_temperature",
++            .description = "读取指定位置的温度和湿度。"
++                           "参数: location(客厅/卧室/厨房/浴室/书房/室外)",
++            .func = tool_temperature_read_entry,
++            .arg_count = 1,
++            .category = TOOL_CATEGORY_SMART_HOME
++        };
++        tool_manager_register(tm, &temp_tool);
++        printf("[ToolMgr] 注册Tool: read_temperature ✓\n");
++    }
++
+     printf("[ToolMgr] Tool管理器初始化完成\n");
+     return tm;
+ }
+@@ -68,4 +101,15 @@
+         printf("[ToolMgr] Tool未找到: %s\n", name);
+         return NULL;
+     }
++    /* +++ 新增：智能家居Tool路由 +++ */
++    if (strcmp(name, "light_control") == 0) {
++        printf("[ToolMgr] 路由到: light_control\n");
++        /* 调用 tool_light_control() */
++        return handle_light_control_call(params, result);
++    }
++    if (strcmp(name, "read_temperature") == 0) {
++        printf("[ToolMgr] 路由到: read_temperature\n");
++        /* 调用 tool_temperature_read() */
++        return handle_temperature_read_call(params, result);
++    }
+ }

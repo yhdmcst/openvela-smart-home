@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>openvela 物理AI - 智能家居控制面板</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: #0b1721;
+  color: #d0d8e0;
+  display: flex; height: 100vh; overflow: hidden;
+}
+
+/* 面板布局 */
+.left-panel   { flex: 1.2; overflow-y: auto; padding: 20px; }
+.center-panel { width: 360px; background: #08121a; display: flex; flex-direction: column;
+                border-left: 1px solid #1a3040; border-right: 1px solid #1a3040; }
+.right-panel  { width: 420px; background: #08121a; display: flex; flex-direction: column; }
+
+/* 标题区 */
+.header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.header .logo { font-size: 26px; }
+.header h1 { font-size: 19px; font-weight: 700; color: #64d8ff; }
+.header .badge { font-size: 10px; background: #1a3a50; color: #ff9e64; padding: 3px 10px;
+                border-radius: 10px; letter-spacing: 1px; }
+
+/* 快捷操作 */
+.quick-actions { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.btn { padding: 8px 16px; border: 1px solid #1a3040; border-radius: 8px; background: #0f1e2a;
+       color: #c0d0e0; cursor: pointer; font-size: 13px; transition: all 0.2s; white-space: nowrap; }
+.btn:hover { border-color: #64d8ff; background: #142d3d; }
+.btn.accent { background: #1a3a50; color: #ff9e64; border-color: #2a5a70; }
+.btn.accent:hover { background: #1e4a60; }
+
+/* 区域标签 */
+.section-title { font-size: 14px; font-weight: 600; color: #64d8ff; margin: 16px 0 10px;
+                 padding-bottom: 6px; border-bottom: 1px solid #1a3040; }
+
+/* 房间卡片网格 */
+.room-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.room-card {
+  background: #0f1e2c; border: 1px solid #152d3d; border-radius: 12px; padding: 14px;
+  transition: all 0.25s; cursor: pointer; position: relative;
+}
+.room-card:hover { border-color: #3a6080; transform: translateY(-1px); }
+.room-card.active { border-color: #64d8ff; box-shadow: 0 0 16px rgba(100,216,255,0.12); }
+
+.room-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.room-name { font-size: 15px; font-weight: 600; }
+
+/* 灯光滑块 */
+.light-row { display: flex; align-items: center; gap: 8px; }
+.light-slider { -webkit-appearance: none; flex: 1; height: 5px; border-radius: 3px;
+                background: #1a3040; outline: none; }
+.light-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: #64d8ff; cursor: pointer; }
+.bri-val { font-size: 12px; color: #7a8a9a; min-width: 36px; text-align: right; }
+
+/* 传感器迷你行 */
+.sensor-mini { display: flex; gap: 10px; margin-top: 8px; font-size: 11px; flex-wrap: wrap; }
+.sensor-tag { display: flex; align-items: center; gap: 3px; padding: 2px 7px;
+              background: #0a1822; border-radius: 5px; }
+.sensor-tag.warn { background: #2a1a10; color: #ff9e64; }
+
+/* 窗帘/安防指示 */
+.status-mini { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; }
+
+/* 传感器详情面板（中间栏） */
+.sensor-detail { padding: 2px 0; }
+.sensor-bar { margin: 6px 0; }
+.sensor-bar .label { font-size: 11px; color: #5a6a7a; margin-bottom: 2px; display: flex;
+                     justify-content: space-between; }
+.sensor-bar .track { height: 4px; background: #1a3040; border-radius: 2px; overflow: hidden; }
+.sensor-bar .fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.fill.good { background: #4caf50; } .fill.warn { background: #ffab40; } .fill.danger { background: #f44336; }
+.fill.info { background: #64b5f6; }
+
+/* ReAct 推理链 */
+.log-header { padding: 16px 20px; border-bottom: 1px solid #1a3040;
+              display: flex; align-items: center; gap: 8px; }
+.log-header h2 { font-size: 16px; }
+.live-dot { width: 8px; height: 8px; background: #4caf50; border-radius: 50%; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.log-container { flex: 1; overflow-y: auto; padding: 12px 20px; }
+.log-entry { margin-bottom: 12px; padding: 12px; border-radius: 8px;
+             animation: slideIn 0.3s; font-size: 12px; line-height: 1.6; }
+@keyframes slideIn { from{opacity:0;transform:translateX(15px)} to{opacity:1;transform:translateX(0)} }
+.log-entry.step    { background: #0f1e2a; border-left: 3px solid #1a3040; }
+.log-entry.thought { background: #1a2a1a; border-left: 3px solid #ffab40; }
+.log-entry.action  { background: #1a1a2e; border-left: 3px solid #7c4dff; }
+.log-entry.observe { background: #1a2a2a; border-left: 3px solid #4caf50; }
+.log-entry.answer  { background: #162a1a; border-left: 3px solid #64d8ff; }
+.log-entry.patrol  { background: #1a2010; border-left: 3px solid #ff9e64; }
+.log-step { font-size: 10px; color: #5a6a7a; margin-bottom: 2px; text-transform: uppercase;
+            letter-spacing: 1px; }
+.patrol-badge { display: inline-block; font-size: 10px; background: #3a2a10; color: #ff9e64;
+                padding: 1px 8px; border-radius: 6px; margin-left: 6px; }
+
+/* 状态栏 */
+.status-bar { padding: 10px 20px; border-top: 1px solid #1a3040; display: flex;
+              justify-content: space-between; font-size: 11px; color: #5a6a7a; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+/* 输入栏 */
+.patrol-hint { padding: 6px 20px; font-size: 10px; color: #ff9e64; }
+.input-bar { padding: 12px 20px; border-top: 1px solid #1a3040; display: flex; gap: 6px; }
+.input-bar input { flex: 1; padding: 9px 14px; border: 1px solid #1a3040; border-radius: 8px;
+                   background: #0f1e2c; color: #d0d8e0; font-size: 13px; outline: none; }
+.input-bar input:focus { border-color: #64d8ff; }
+.input-bar button { padding: 9px 18px; border: none; border-radius: 8px; background: #1a4a60;
+                    color: #64d8ff; cursor: pointer; font-size: 13px; }
+.input-bar button:hover { background: #1e5a70; }
+.hints { padding: 4px 20px 0; font-size: 10px; color: #3a4a5a; display: flex; gap: 6px; flex-wrap: wrap; }
+.hints span { padding: 2px 8px; background: #0f1e2c; border-radius: 6px; cursor: pointer; }
+.hints span:hover { background: #142d3d; color: #7a8a9a; }
+.hints span.fuzzy { color: #ff9e64; border: 1px dashed #3a2a10; }
+</style>
+</head>
+<body>
+
+<!-- ===== 左侧：房间控制 + 传感器概览 ===== -->
+<div class="left-panel">
+  <div class="header">
+    <span class="logo">🤖</span>
+    <h1>openvela 物理AI</h1>
+    <span class="badge">感知→决策→执行</span>
+  </div>
+
+  <div class="quick-actions">
+    <button class="btn accent" onclick="sendCmd('我出门了')">🏠 离家模式</button>
+    <button class="btn accent" onclick="sendCmd('早上好')">☀️ 早安模式</button>
+    <button class="btn" onclick="sendCmd('打开所有灯')">💡 全屋开灯</button>
+    <button class="btn" onclick="sendCmd('关闭所有灯')">🌙 全屋关灯</button>
+  </div>
+
+  <div class="section-title">🏠 房间控制面板</div>
+  <div class="room-grid" id="roomGrid"></div>
+
+  <div class="section-title">📡 物理感知层 — 多传感器状态</div>
+  <div class="room-grid" id="sensorGrid" style="grid-template-columns:1fr 1fr 1fr;"></div>
+</div>
+
+<!-- ===== 中间：传感器详情仪表盘 ===== -->
+<div class="center-panel">
+  <div style="padding:16px 20px;border-bottom:1px solid #1a3040;">
+    <span style="font-size:14px;font-weight:600;">📊 环境仪表盘</span>
+    <select id="sensorLoc" onchange="renderSensorDetail()" style="margin-left:10px;padding:4px 8px;
+      background:#0f1e2c;color:#c0d0e0;border:1px solid #1a3040;border-radius:4px;font-size:12px;">
+    </select>
+  </div>
+  <div class="sensor-detail" id="sensorDetail" style="padding:16px 20px;overflow-y:auto;flex:1;"></div>
+
+  <!-- 主动巡检日志 -->
+  <div style="padding:12px 20px;border-top:1px solid #1a3040;">
+    <span style="font-size:12px;font-weight:600;color:#ff9e64;">🔄 主动巡检</span>
+    <button class="btn" style="float:right;font-size:10px;padding:3px 10px;" onclick="triggerPatrol()">立即巡检</button>
+  </div>
+  <div id="patrolMini" style="padding:0 20px 12px;font-size:11px;color:#5a6a7a;max-height:120px;overflow-y:auto;"></div>
+</div>
+
+<!-- ===== 右侧：ReAct 推理链 ===== -->
+<div class="right-panel">
+  <div class="log-header">
+    <div class="live-dot"></div>
+    <h2>🧠 ReAct 推理链</h2>
+  </div>
+
+  <div class="hints">
+    <span onclick="sendCmd('打开客厅的灯')">💡 开灯</span>
+    <span onclick="sendCmd('现在室温多少度')">🌡️ 温湿度</span>
+    <span class="fuzzy" onclick="sendCmd('有点冷')">🥶 有点冷</span>
+    <span class="fuzzy" onclick="sendCmd('太暗了')">🌑 太暗了</span>
+    <span class="fuzzy" onclick="sendCmd('不透气')">😮‍💨 不透气</span>
+  </div>
+
+  <div class="log-container" id="logContainer">
+    <div class="log-entry answer">
+      <div class="log-step">物理AI 就绪</div>
+      <div class="log-content">👋 物理AI智能家居系统已启动。
+<b>核心能力：</b>主动感知 → 模糊理解 → 自主决策 → 多设备协同执行。
+试试说"<span style="color:#ff9e64">有点冷</span>"、"<span style="color:#ff9e64">太暗了</span>"或"<span style="color:#ff9e64">我出门了</span>"。</div>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span><span class="status-dot" style="background:#4caf50"></span>QEMU模拟器</span>
+    <span id="llmInfo">DeepSeek</span>
+    <span id="patrolStatus">巡检: --</span>
+    <span id="lastUpdate">更新: --</span>
+  </div>
+
+  <div class="patrol-hint" id="patrolHint"></div>
+
+  <div class="input-bar">
+    <input id="cmdInput" placeholder="输入自然语言指令..."
+           onkeydown="if(event.key==='Enter')sendCmd()">
+    <button onclick="sendCmd()">发送</button>
+  </div>
+</div>
+
+<script>
+const LOCS = ['客厅','卧室','厨房','浴室','书房','室外'];
+const ICONS = ['🛋️','🛏️','🍳','🛁','📚','🌤️'];
+let state = {};
+
+async function fetchState() {
+  try {
+    const r = await fetch('/api/state'); state = await r.json();
+    renderRooms(); renderSensorDetail();
+  } catch(e) {}
+}
+async function fetchPatrol() {
+  try {
+    const r = await fetch('/api/patrol/log'); const d = await r.json();
+    document.getElementById('patrolStatus').textContent = '巡检: '+(d.running?'运行中':'已停止');
+    document.getElementById('patrolHint').textContent =
+      d.running ? '⚡ 主动巡检运行中 — AI自主感知环境并自动决策' : '';
+    if (d.log && d.log.length) {
+      let h = '';
+      for(let i=0; i<Math.min(d.log.length,3); i++) {
+        const l = d.log[i];
+        h += `<div style="margin:4px 0;padding:4px 8px;background:#0f1e2c;border-radius:4px;">
+          <b>${l.time}</b> 主动决策${l.auto_decisions}项 | 异常${(l.anomalies||[]).length}项
+          ${l.actions.map(a=>'<br>↳ '+a).join('')}</div>`;
+      }
+      document.getElementById('patrolMini').innerHTML = h || '暂无巡检记录';
+    }
+  } catch(e) {}
+}
+
+async function triggerPatrol() {
+  appendLog('patrol','🧠 主动巡检','手动触发物理AI环境巡检...');
+  try {
+    const r = await fetch('/api/patrol/trigger'); const d = await r.json();
+    if (d.report) {
+      appendLog('patrol','🔍 巡检完成',`主动决策 <b>${d.report.auto_decisions}</b> 项 | 异常 <b>${(d.report.anomalies||[]).length}</b> 项`);
+      d.report.actions.forEach(a => appendLog('action','🔄 自动执行', a));
+      d.report.anomalies.forEach(a => appendLog('observe','⚠️ 异常', a));
+    }
+    fetchPatrol(); fetchState();
+  } catch(e) { appendLog('observe','⚠️','巡检API未连接'); }
+}
+
+async function sendCmd(cmd) {
+  const inp = document.getElementById('cmdInput');
+  const text = cmd || inp.value.trim();
+  if (!text) return;
+  if (!cmd) inp.value = '';
+
+  appendLog('thought','🤔 Thought',`分析用户指令: "${text}"`);
+
+  try {
+    const r = await fetch('/api/command', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({command:text})
+    });
+    const d = await r.json();
+
+    if (d.thought) appendLog('thought','💭 Thought', d.thought);
+    for (const a of (d.actions||[])) appendLog('action','⚡ Action', a.description);
+    if (d.observation) appendLog('observe','👁️ Observation', d.observation);
+    if (d.answer) appendLog('answer','✅ Final Answer', d.answer);
+
+    setTimeout(()=>{ fetchState(); fetchPatrol(); }, 400);
+  } catch(e) {
+    // 离线模式
+    simulateLocal(text);
+  }
+}
+
+function simulateLocal(text) {
+  if (text.includes('冷')) {
+    appendLog('thought','💭 Thought','模糊指令"有点冷"→物理AI先感知环境温度');
+    appendLog('action','⚡ Action','tool_sensor_read(location="客厅") → 查询温度');
+    appendLog('observe','👁️ Observation','[Sensor] 客厅温度=18.5°C，体感偏冷');
+    appendLog('action','⚡ Action','物理AI决策：温度<20°C → 建议开启暖气至22°C');
+    appendLog('answer','✅ 答案','🥶 客厅18.5°C确实偏冷。物理AI已自主判断需升温至22°C。');
+  } else if (text.includes('暗')) {
+    appendLog('thought','💭 Thought','模糊指令"太暗了"→物理AI先查询光照传感器');
+    appendLog('action','⚡ Action','tool_sensor_read→光照=1200lux<3000lux→自动开灯80%');
+    appendLog('observe','👁️ Observation','[Sensor] 光照1200lux | [Light] 已开启80%');
+    appendLog('answer','✅ 答案','💡 光照仅1200lux，已自动开灯80%。感知→决策→执行闭环。');
+  } else if (text.includes('出门')||text.includes('拜拜')) {
+    appendLog('thought','💭 Thought','多设备协同：离家模式启动');
+    appendLog('action','⚡ Action','Step1: sensor_read_all→环境感知');
+    appendLog('action','⚡ Action','Step2: light_control("全屋",关灯)');
+    appendLog('action','⚡ Action','Step3: curtain_control("全屋",关闭)');
+    appendLog('action','⚡ Action','Step4-5: security_control→门窗检查→安防布防');
+    appendLog('answer','✅ 最终','🏠 离家模式已启动！灯光+窗帘+安防多设备协同完成。');
+  } else if (text.includes('闷')||text.includes('透气')) {
+    appendLog('thought','💭 Thought','模糊指令"不透气"→物理AI查询CO2传感器');
+    appendLog('action','⚡ Action','tool_sensor_read→CO2=950ppm>800ppm→自动开窗');
+    appendLog('answer','✅ 答案','🌬️ CO2浓度950ppm偏高，已自动开窗通风。');
+  } else {
+    appendLog('answer','🤔','暂不支持离线模式的完整推理，请启动 bridge_server.py');
+  }
+  fetchState();
+}
+
+function appendLog(type, step, content) {
+  const c = document.getElementById('logContainer');
+  const d = document.createElement('div');
+  d.className = 'log-entry ' + type;
+  d.innerHTML = `<div class="log-step">${step}</div><div class="log-content">${content}</div>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+  document.getElementById('lastUpdate').textContent = '更新: '+new Date().toLocaleTimeString();
+}
+
+function renderRooms() {
+  const g = document.getElementById('roomGrid'); g.innerHTML = '';
+  const sl = document.getElementById('sensorLoc'); sl.innerHTML = '';
+
+  LOCS.forEach((loc,i) => {
+    if (loc==='室外') return;
+    const l = (state.lights||{})[loc]||{is_on:false,brightness:0};
+    const t = (state.temperature||{})[loc]||{temp:25.0,humidity:60.0};
+    const cu = (state.curtains||{})[loc]||{is_open:true,position:100};
+    const s = (state.sensors||{})[loc]||{};
+
+    const card = document.createElement('div');
+    card.className = 'room-card'+(l.is_on?' active':'');
+    card.innerHTML = `
+      <div class="room-header">
+        <span class="room-name">${ICONS[i]} ${loc}</span>
+        <span style="font-size:10px;color:${l.is_on?'#64d8ff':'#3a4a5a'}">${l.is_on?'🟢':'⚫'}</span>
+      </div>
+      <div class="light-row">
+        <span>💡</span>
+        <input class="light-slider" type="range" min="0" max="100" value="${l.brightness}"
+               oninput="updateLight('${loc}',this.value)">
+        <span class="bri-val">${l.brightness}%</span>
+      </div>
+      <div class="sensor-mini">
+        <span class="sensor-tag">🌡️ ${t.temp}°C</span>
+        <span class="sensor-tag">💧 ${t.humidity}%</span>
+        <span class="sensor-tag">🪟 ${cu.is_open?'开':'关'}</span>
+      </div>
+      <div class="status-mini">
+        <span style="color:#5a6a7a">👤 ${(s.motion_detected)?'有人':'无人'}</span>
+        <span style="color:${(s.pm25||0)>75?'#f44336':'#5a6a7a'}">PM2.5 ${(s.pm25||0).toFixed(0)}</span>
+      </div>
+    `;
+    card.addEventListener('click', e => { if(e.target.tagName!=='INPUT') toggleLight(loc); });
+    g.appendChild(card);
+
+    const opt = document.createElement('option'); opt.value = loc; opt.textContent = ICONS[i]+' '+loc;
+    if (loc==='客厅') opt.selected = true;
+    sl.appendChild(opt);
+  });
+}
+
+function renderSensorDetail() {
+  const loc = document.getElementById('sensorLoc').value || '客厅';
+  const s = (state.sensors||{})[loc]||{};
+  const sec = (state.security||{mode:'off',armed:false});
+
+  const bars = [
+    {label:'☀️ 光照强度', val:s.illuminance||0, max:80000, unit:'lux',
+     color: v=>v>50000?'danger':v>20000?'warn':'good'},
+    {label:'🌡️ PM2.5', val:s.pm25||0, max:150, unit:'μg/m³',
+     color: v=>v>75?'danger':v>35?'warn':'good'},
+    {label:'💨 CO2浓度', val:s.co2||0, max:2000, unit:'ppm',
+     color: v=>v>1000?'danger':v>800?'warn':'good'},
+    {label:'🔊 噪音', val:s.noise||0, max:90, unit:'dB',
+     color: v=>v>60?'danger':v>45?'warn':'good'},
+  ];
+
+  let h = `<div style="margin-bottom:12px;font-size:13px;color:#64d8ff;">📍 ${loc} 物理状态</div>`;
+  bars.forEach(b => {
+    const pct = Math.min(b.val/b.max*100, 100);
+    const cls = b.color(b.val);
+    h += `<div class="sensor-bar">
+      <div class="label"><span>${b.label}</span><span style="color:${cls==='danger'?'#f44336':cls==='warn'?'#ffab40':'#4caf50'}">${b.val.toFixed(1)} ${b.unit}</span></div>
+      <div class="track"><div class="fill ${cls}" style="width:${pct}%"></div></div>
+    </div>`;
+  });
+
+  // 数字→物理映射
+  h += `<div style="margin-top:14px;padding:10px;background:#0f1e2c;border-radius:8px;font-size:11px;">
+    <div style="color:#ff9e64;margin-bottom:6px;">🔗 数字→物理映射 (Digital → Physical)</div>`;
+  h += `<div style="color:#7a8a9a;">👤 人体红外: ${s.motion_detected?'<span style="color:#4caf50">检测到人</span>':'<span style="color:#5a6a7a">无人</span>'} → ${s.motion_detected?'保持设备运行':'节能关灯'}</div>`;
+  h += `<div style="color:#7a8a9a;">🚪 门磁: ${s.door_open?'<span style="color:#f44336">门开</span>':'<span style="color:#4caf50">门关</span>'} | 🪟 窗磁: ${s.window_open?'<span style="color:#f44336">窗开</span>':'<span style="color:#4caf50">窗关</span>'}</div>`;
+  h += `<div style="color:#7a8a9a;margin-top:4px;">🔒 安防模式: <b>${sec.mode==='away'?'离家已布防':sec.mode==='off'?'未布防':sec.mode}</b></div>`;
+  h += `</div>`;
+
+  document.getElementById('sensorDetail').innerHTML = h;
+
+  // 传感器概览卡片
+  const sg = document.getElementById('sensorGrid'); sg.innerHTML = '';
+  LOCS.forEach((loc,i) => {
+    if (loc==='室外') return;
+    const s = (state.sensors||{})[loc]||{};
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    card.style.padding = '10px';
+    card.innerHTML = `
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;">${ICONS[i]} ${loc}</div>
+      <div style="font-size:10px;color:#7a8a9a;">
+        ☀️ ${(s.illuminance||0).toFixed(0)}lux | 👤 ${s.motion_detected?'有人':'无人'}<br>
+        PM2.5 ${(s.pm25||0).toFixed(0)} | CO2 ${(s.co2||0).toFixed(0)}<br>
+        🚪${s.door_open?'<span style="color:#f44336">开</span>':'关'} 🪟${s.window_open?'<span style="color:#f44336">开</span>':'关'}
+      </div>
+    `;
+    sg.appendChild(card);
+  });
+}
+
+function updateLight(loc, val) {
+  sendCmd(val>0 ? `将${loc}灯光调到${val}%` : `关闭${loc}的灯`);
+}
+function toggleLight(loc) {
+  const l = (state.lights||{})[loc]||{is_on:false};
+  sendCmd(l.is_on ? `关闭${loc}的灯` : `打开${loc}的灯`);
+}
+
+// 每2秒刷新状态 + 巡检日志
+setInterval(()=>{ fetchState(); fetchPatrol(); }, 2500);
+fetchState(); fetchPatrol();
+renderSensorDetail();
+</script>
+</body>
+</html>

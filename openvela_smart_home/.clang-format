@@ -1,0 +1,17 @@
+# openvela 智能家居项目 — clang-format 代码风格配置
+# 使用: clang-format -i tools/*.c security/*.c
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Allman
+AllowShortFunctionsOnASingleLine: None
+PointerAlignment: Right
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+SpaceBeforeParens: ControlStatements
+CommentPragmas: '^[!@#]'
+IncludeBlocks: Preserve
+SortIncludes: false
+ReflowComments: false

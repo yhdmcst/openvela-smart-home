@@ -1,0 +1,19 @@
+# 忽略 openvela 系统源码（30GB 太大了，绝对不要上传！）
+openvela_workspace/
+openvela/
+build_*/
+*.log
+*.o
+*.a
+*.so
+
+# 忽略 IDE 和系统垃圾
+.vscode/
+.idea/
+.DS_Store
+*.tmp
+*.swp
+
+# 忽略 Python 缓存
+__pycache__/
+*.pyc
