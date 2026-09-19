@@ -1,1 +1,0 @@
-../../../../tools/device_state.c

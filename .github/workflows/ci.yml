@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate shell scripts
+        run: bash -n auto_build_vela.sh start_simulator.sh switch_llm.sh smoke_test.sh test_runner.sh
+
+      - name: Validate dashboard server
+        run: python3 -m py_compile dashboard/bridge_server.py
+
+      - name: Build and test smart-home tools
+        run: make test

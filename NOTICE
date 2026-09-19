@@ -1,0 +1,9 @@
+openvela Smart Home Control System
+Copyright 2026 openvela Smart Home Contributors
+
+This product integrates with the openvela Project
+(https://github.com/open-vela).
+
+Portions of the bundled AI Agent integration are derived from MimiClaw
+(https://github.com/memovai/mimiclaw), licensed under the MIT License.
+Individual source files retain their original copyright and license notices.

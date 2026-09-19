@@ -136,7 +136,7 @@ REQUIRED_FILES=(
     security/command_whitelist.c
     dashboard/web_panel.html dashboard/bridge_server.py
     patches/agent_init.patch patches/tool_registration.patch
-    docs/README.md docs/复现文档.md docs/演示日志.txt docs/THIRD_PARTY.md
+    README.md docs/ARCHITECTURE.md docs/复现文档.md docs/演示日志.txt docs/THIRD_PARTY.md
     .gitignore .clang-format
 )
 for f in "${REQUIRED_FILES[@]}"; do

@@ -1,19 +1,42 @@
-# 忽略 openvela 系统源码（30GB 太大了，绝对不要上传！）
+# openvela workspace and generated build output
 openvela_workspace/
-openvela/
+/openvela/
 build_*/
+.build/
+.test_build/
+build_arm64/
+rootfs.img
+device_state.json
+BUILD_SUMMARY.txt
 *.log
 *.o
 *.a
 *.so
+*.bin
+*.elf
+*.img
 
-# 忽略 IDE 和系统垃圾
+# Local credentials and generated configuration
+llm_config.h
+llm_config.h.backup
+.env
+.env.*
+!.env.example
+*api_key*
+*secret*
+
+# Editors and operating-system files
 .vscode/
 .idea/
 .DS_Store
+Thumbs.db
 *.tmp
 *.swp
 
-# 忽略 Python 缓存
+# Python cache
 __pycache__/
 *.pyc
+
+# Local preview artifacts
+.edge-profile/
+.preview-server.js

@@ -1,1 +1,0 @@
-../../../../tools/smart_home_tools.h

@@ -94,7 +94,7 @@ skill:
         - if: "{{outdoor_temp}} >= 15 AND {{outdoor_temp}} <= 30"
           thought: "室外温度 {{outdoor_temp}}°C 适宜，建议拉开窗帘通风采光"
           action:
-            tool: curtain_control              # 窗帘控制Tool（需补充实现）
+            tool: curtain_control
             params:
               action: "open"
         - if: "{{outdoor_temp}} > 30"
@@ -229,7 +229,7 @@ agent_load_skill(agent_handle, "/data/skills/good_morning_skill.md");
 | `read_temperature` | ✅ 已实现 | `tool_temperature_read.c` |
 | `light_control` | ✅ 已实现 | `tool_light_control.c` |
 | `ac_control` | ⚠️ 需补充 | 空调红外/智能插座控制 |
-| `curtain_control` | ⚠️ 需补充 | 窗帘电机控制 |
+| `curtain_control` | ✅ 已实现 | `tool_curtain_control.c` |
 | `text_to_speech` | ⚠️ 可选 | 语音播报模块 |
 
 > 注：`ac_control` 和 `curtain_control` 可作为初赛加分项开发，核心灯光+温湿度已完全就绪。
